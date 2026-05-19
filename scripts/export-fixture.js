@@ -57,6 +57,14 @@ function copyTree(from, to) {
 function copyJsonOrText(from, to) {
   if (!fs.existsSync(from)) return;
   fs.mkdirSync(path.dirname(to), { recursive: true });
+
+  // Skip files larger than 100MB to prevent string-length overflow in JSON serialization
+  const stat = fs.statSync(from);
+  if (stat.size > 100 * 1024 * 1024) {
+    console.warn(`[export-fixture] Skipping large file (${stat.size} bytes): ${from}`);
+    return;
+  }
+
   if (from.endsWith(".json")) {
     try {
       const relativePath = path.relative(source, from);
@@ -90,6 +98,8 @@ function shouldSkip(name) {
     ".git",
     "exec-approvals.json",
   ].includes(name) ||
+    name.startsWith("codex-home") ||
+    name === "sessions" ||
     name.endsWith(".lock") ||
     name.endsWith(".jsonl") ||
     name.endsWith(".trajectory-path.json") ||
